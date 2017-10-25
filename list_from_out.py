@@ -2,8 +2,8 @@ f = open('out','r')
 d = f.read()
 f.close()
 l = d.split('\n')
-del l[0]
-f = open('gotten','a+')
+#del l[0]
+f = open('gotten','w')
 
 for i in l:
     try:

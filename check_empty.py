@@ -47,6 +47,12 @@ for x in data:
     print('ratio = '+str((empty / (count*1.0))*100))
     count += 1
 
+    write_to_file(empties) # fuck it
+
+    if count == 150:
+        write_to_file(empties)
+        
+
     if (count % 500) == 0:
         write_to_file(empties)
 

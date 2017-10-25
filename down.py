@@ -205,7 +205,12 @@ def upload_movie(name):
     print("uploading...")
     subprocess.call("cd ..", shell=True)
     time.sleep(0.5)
-    subprocess.call("gdrive upload -p 0B5SLYItizrrvbk51R3JXb0Y5Zkk -r '"+str(name)+"'/", shell=True)
+    #subprocess.call("gdrive upload -p 0B5SLYItizrrvbk51R3JXb0Y5Zkk -r '"+str(name)+"'/", shell=True)
+    
+    output = subprocess.check_output("gdrive upload -p 0B5SLYItizrrvbk51R3JXb0Y5Zkk -r '"+str(name)+"'/", shell=True)
+    print(output)
+    code = 'Error 403'
+    
     print("done uploading... '"+str(name)+"'/")
     subprocess.call("rm -r '"+str(name)+"'/", shell=True)
     print("done deleting '"+str(name)+"'/")
