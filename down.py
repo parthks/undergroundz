@@ -13,6 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from browsermobproxy import Server
 
 from pyvirtualdisplay import Display
 
@@ -77,7 +78,7 @@ counter = START
 doneMovies = []
 errorMovies = []
 
-display = Display(visible=0, size=(800, 600))
+display = Display(visible=0, size=(700, 700))
 display.start()
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument('--no-sandbox')
@@ -97,7 +98,7 @@ def logError(name):
 
 
 def download_file(url):
-    local_filename = 'movieFile'
+    local_filename = 'movieFile.mp4'
     # NOTE the stream=True parameter
     r = requests.get(url, stream=True)
     with open(local_filename, 'wb') as f:
@@ -105,7 +106,101 @@ def download_file(url):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
                 #f.flush() commented by recommendation from J.F.Sebastian
-    return local_filename
+
+
+
+def new_dl_meth(link): #THIS PART HAS PROBLEMS!!!!
+    #path = '/Users/parth/Downloads/browsermob-proxy-2.1.4/bin/browsermob-proxy'
+    #from browsermobproxy import Server
+    print('!!NEW METHOD FOR VIP 7!!')
+    path = '/root/browsermob-proxy-2.1.4/bin/browsermob-proxy'
+    server = Server(path, options={'port': 9999})
+    server.start()
+    proxy = server.create_proxy()
+    print('Started proxy!')
+
+    profile  = webdriver.FirefoxProfile()
+    profile.set_proxy(proxy.selenium_proxy())
+    browser = webdriver.Firefox(firefox_profile=profile)
+    print('Started Firefox!')
+
+    #url = 'https://solarmoviez.ru/movie/sea-oak-season-01-22636/1092432-7/watching.html'
+
+    # xpathDate = "/html/body[@id='body-search']/div[@id='xmain']/div[@id='main']/div[@class='container']/div[@class='main-content main-detail ']/div[@class='md-top']/div[@id='mv-info']/div[@class='mvi-content']/div[@class='mvic-desc']/div[@class='mvic-info']/div[@class='mvici-right']/p[3]"
+    # date = browser.find_element_by_xpath(xpathDate).text.split(': ')[1]
+    # xpathName = "/html/body[@id='body-search']/div[@id='xmain']/div[@id='main']/div[@class='container']/div[@class='main-content main-detail ']/div[@class='md-top']/div[@id='mv-info']/div[@class='mvi-content']/div[@class='mvic-desc']/div[@class='detail-mod']/h3"
+    # title = browser.find_element_by_xpath(xpathName).text
+    # title = title + ' (' + date + ')'
+    # print(title)
+
+
+    proxy.new_har('HART')
+    print_warning('getting link..(again)..')
+    browser.get(link)
+    print_success('zzzzz')
+    time.sleep(5)
+    browser.get('https://solarmoviez.ru/movie/star-wars-rebels-the-siege-of-lothal-17597/709439-7/watching.html')
+    main_window = browser.current_window_handle
+    time.sleep(1)
+    el = browser.find_element_by_xpath('//*[@id="sv-7"]/a')
+    action = webdriver.common.action_chains.ActionChains(browser)
+    action.move_to_element_with_offset(el, 5, 5)
+    action.click()
+    action.perform()
+    time.sleep(2)
+    #browser.switch_to.alert.accept()
+    browser.switch_to_window(main_window)
+    browser.find_element_by_xpath('//*[@id="sv-7"]/a').click()
+    browser.switch_to_window(main_window)
+    browser.current_url
+    browser.find_element_by_xpath('//*[@id="sv-14"]/a').click()
+    browser.switch_to_window(main_window)
+    browser.current_url
+    browser.find_element_by_xpath('//*[@id="sv-7"]/a').click()
+    browser.current_url
+
+
+    s = str(proxy.har) # returns a HAR JSON blob
+    url = browser.current_url
+    start = s.find('https://streaming.lemonstream.me:1443')
+    end = s.find(" ",start)
+    m3u8 = s[start:end-2]
+
+    key = m3u8.split('/')[3]
+
+
+    junk_m3u8 = "' -H 'Origin: https://solarmoviez.ru' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.8,mt;q=0.6' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36' -H 'Accept: */*' -H 'Referer:"+ url +"' -H 'Connection: keep-alive' --compressed"
+    output = subprocess.check_output("curl '"+m3u8+junk_m3u8, shell=True)
+
+    o = str(output)
+    start = o.find('seg-',-40)
+
+    end = o.find('-v1-',31350)
+
+    maxNum = o[start:end]
+    maxNum = maxNum.split('-')[1]
+
+    gold = o.split('\\n')[-3]
+    cutIndex = gold.rfind('/')
+    gold = gold[:cutIndex]
+
+    endPart = '/seg-[1-'+maxNum+']-v1-a1.ts'
+
+    goldUrl = 'https://streaming.lemonstream.me:1443/'+key+'/127.0.0.1/'+gold+endPart
+    junk_gold = "' -H 'Origin: https://solarmoviez.ru' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.8,mt;q=0.6' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36' -H 'Accept: */*' -H 'Referer: "+ url +"' -H 'Connection: keep-alive' --compressed"
+    print_success('Starting download')
+    server.stop()
+    browser.quit()
+
+    subprocess.call("curl -o 'lool_#1.ts' '"+goldUrl+junk_gold, shell=True)
+
+    # name = url.split('/')[-1].split('.')[0] -- NOT THE FULL URL!
+
+    subprocess.call("cat lool_*.ts > movieFile.mp4", shell=True)
+    subprocess.call("rm *.ts", shell=True)
+
+    # return 'name.mp4'
+
 
 
 def get_download_link(movieLink):
@@ -116,7 +211,12 @@ def get_download_link(movieLink):
         main_window = driver.current_window_handle
         print("getting OPENLOAD link")
         time.sleep(1)
-        driver.find_element_by_xpath("/html/body/div[@id='xmain']/div[@id='main']/div[@class='container']/div[@class='main-content main-detail']/div[@class='md-top']/div[@id='player-area']/div[@class='pa-server']/div[@class='pas-header']/div[@class='pash-choose']/div[@class='btn-group']/ul[@id='servers-list']/li[@id='sv-14']/a").click()
+        el = driver.find_element_by_xpath('//*[@id="sv-14"]/a')
+        action = webdriver.common.action_chains.ActionChains(driver)
+        action.move_to_element_with_offset(el, 5, 5)
+        action.click()
+        action.perform()
+        time.sleep(2)
         time.sleep(1)
         driver.switch_to_window(main_window)
         time.sleep(1)
@@ -139,12 +239,27 @@ def get_download_link(movieLink):
         driver.get(movieLink)
         time.sleep(1)
         main_window = driver.current_window_handle
-        driver.find_element_by_xpath("/html/body/div[@id='xmain']/div[@id='main']/div[@class='container']/div[@class='main-content main-detail']/div[@class='md-top']/div[@id='player-area']/div[@class='pa-server']/div[@class='pas-header']/div[@class='pash-choose']/div[@class='btn-group']/ul[@id='servers-list']/li[@id='sv-6']/a").click();
-        time.sleep(1)
+        # if driver.find_element_by_xpath('//*[@id="player-area"]/div[2]/div[1]/div[1]/span') == 'VIP 7':
+        #     dl = 'dl this :P'
+        #     print('!!VIP 7!!')
+        #     return dl
+        el = driver.find_element_by_xpath('//*[@id="sv-6"]/a')
+        action = webdriver.common.action_chains.ActionChains(driver)
+        action.move_to_element_with_offset(el, 5, 5)
+        action.click()
+        action.perform()
+        time.sleep(2)
         driver.switch_to_window(main_window)
-        time.sleep(1)
+        time.sleep(2)
+        el = driver.find_element_by_xpath('//*[@id="sv-6"]/a')
+        action = webdriver.common.action_chains.ActionChains(driver)
+        action.move_to_element_with_offset(el, 5, 5)
+        action.click()
+        action.perform()
+        time.sleep(3)
         dl = driver.find_element_by_class_name("jw-video").get_attribute("src")
         return dl;
+
 
         
 
@@ -168,10 +283,18 @@ def get_movie(name, link):
 
     driver.get(link)
 
+
     AmBlocked()
 
 
-    time.sleep(0.5)
+    time.sleep(2)
+
+    xpathDate = '//*[@id="mv-info"]/div/div[2]/div[5]/div[2]/p[3]'
+    date = driver.find_element_by_xpath(xpathDate).text.split(': ')[1]
+    xpathName = '//*[@id="mv-info"]/div/div[2]/div[2]/h3'
+    title = driver.find_element_by_xpath(xpathName).text
+    title = title + ' (' + date + ')'
+    print(title)
 
     movieLink = driver.find_element_by_class_name('bwac-btn').get_attribute("href")
     driver.get(movieLink)
@@ -181,19 +304,26 @@ def get_movie(name, link):
     dl = get_download_link(movieLink)
     
     print_warning("starting download!")
+    
+
     driver.quit()
 
     time.sleep(0.5)
     print('\n')
     print_warning(dl);
     print('\n')
-    file = download_file(dl)
+
+    try:
+        download_file(dl)
+    except Exception as e:
+        new_dl_meth(movieLink)
+    
     #file = wget.download(dl)
     #urllib.urlretrieve(dl, str(name)+'.mp4', hook)
-
+    file = 'movieFile.mp4'
     print_success("\nfinished downloading!")
     subprocess.call("mkdir '"+str(name)+"'", shell=True)
-    subprocess.call("mv "+ file + " '"+str(name)+"'/'"+str(name)+"'.mp4", shell=True)
+    subprocess.call("mv "+ file + " '"+str(title)+"'/'"+str(name)+"'.mp4", shell=True)
     logMovie(name)
     
     # print_warning('Sleeping!')

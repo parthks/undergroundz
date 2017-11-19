@@ -29,16 +29,23 @@ for x in data:
             print('zzzzzz...')
             time.sleep(10)
         
-    
-    #if str(out) != "b''":
+
+    index = 0
+    arr = str(out).split(' ')
+    # FIND THE B
+    for index in range(len(arr)):
+        if arr[index] == 'B':
+            index -= 1
+            break
+
     try:
-        size = str(out).split(' ')[9]
+        size = str(out).split(' ')[index]
         print(size)
     except Exception as e:
         print('EMPTY!')
         size = 0
         
-    if int(size) < 50:
+    if int(size) < 3000:
         empties.append(key)
         empty += 1
 
